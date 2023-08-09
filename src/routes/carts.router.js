@@ -1,60 +1,69 @@
-const express = require('express');
-const cartRouter = express.Router();
 
 
-
-const fs = require('fs');
-
-let cartDatabase = [];
-
-
-const loadCartDatabase = () => {
-    const data = fs.readFileSync('carrito.json');
-    cartDatabase = JSON.parse(data);
-};
-
-
-const saveCartDatabase = () => {
-    fs.writeFileSync('carrito.json', JSON.stringify(cartDatabase));
-};
-
-
-loadCartDatabase();
-
-cartRouter.post('/', (req, res) => {
-    const id = 'cart' + cartDatabase.length;
-    const newCart = { id: id, products: [] };
-    cartDatabase.push(newCart);
-    saveCartDatabase();
+cartsRouter.post('/', (req, res) => {
+   
+    const cart = JSON.parse(fs.readFileSync('carrito.json', 'utf8'));
+  
+   
+    const cartId = uuidv4();
+  
+ 
+    const newCart = {
+      id: cartId,
+      products: [],
+    };
+  
+ 
+    fs.writeFileSync('carrito.json', JSON.stringify(newCart, null, 2));
+  
     res.json(newCart);
-});
+  });
+  
 
-cartRouter.get('/:cid', (req, res) => {
-    const cart = cartDatabase.find(c => c.id === req.params.cid);
-    if (!cart) {
-        return res.sendStatus(404);
-    }
-    return res.json(cart.products);
-});
+  cartsRouter.get('/:cid', (req, res) => {
+    const cartId = req.params.cid;
+  
 
-cartRouter.post('/:cid/product/:pid', (req, res) => {
-    const cart = cartDatabase.find(c => c.id === req.params.cid);
-    if (!cart) {
-        return res.sendStatus(404);
-    }
-    const product = { productId: req.params.pid, quantity: 1 };
-    const productInCart = cart.products.find(p => p.productId === product.productId);
-    if (productInCart) {
-        productInCart.quantity += 1;
+    const cart = JSON.parse(fs.readFileSync('carrito.json', 'utf8'));
+  
+    if (cart.id === cartId) {
+      res.json(cart.products);
     } else {
-        cart.products.push(product);
+      res.status(404).json({ error: 'Carrito no encontrado' });
     }
-    saveCartDatabase();
+  });
+  
+ 
+  cartsRouter.post('/:cid/product/:pid', (req, res) => {
+    const cartId = req.params.cid;
+    const productId = req.params.pid;
+    const { quantity } = req.body;
+  
+ 
+    const cart = JSON.parse(fs.readFileSync('carrito.json', 'utf8'));
+  
+    if (cart.id === cartId) {
+      const existingProductIndex = cart.products.findIndex((p) => p.product === productId);
+  
+      if (existingProductIndex !== -1) {
+       
+        cart.products[existingProductIndex].quantity += quantity;
+      } else {
+        
+        cart.products.push({ product: productId, quantity });
+      }
+  
+
+      fs.writeFileSync('carrito.json', JSON.stringify(cart, null, 2));
+  
+      res.json(cart.products);
+    } else {
+      res.status(404).json({ error: 'Carrito no encontrado' });
+    }
+  });
+  
+
+  app.use('/api/carts', cartsRouter);
+  
+  
     
-    res.json(cart);
-});
-
-
-module.exports = cartRouter;
-
-

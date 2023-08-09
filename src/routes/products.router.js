@@ -1,69 +1,111 @@
- const express = require('express');
-const productRouter = express.Router();
 
 
+const express = require('express');
 const fs = require('fs');
-
-let productDatabase = [];
-
-// Load database from file
-const loadDatabase = () => {
-    const data = fs.readFileSync('productos.json');
-    productDatabase = JSON.parse(data);
-};
-
-// Write database to file
-const saveDatabase = () => {
-    fs.writeFileSync('productos.json', JSON.stringify(productDatabase));
-};
-
-// Initialize
-loadDatabase();
+const { v4: uuidv4 } = require('uuid');
 
 
-productRouter.get('/', (req, res) => {
-    res.json(productDatabase);
+app.use(express.json());
+
+
+const productsRouter = express.Router();
+
+
+productsRouter.get('/', (req, res) => {
+ 
+  const products = JSON.parse(fs.readFileSync('productos.json', 'utf8'));
+  res.json(products);
 });
 
-productRouter.get('/:pid', (req, res) => {
-    const product = productDatabase.find(p => p.id === req.params.pid);
-    if (!product) {
-        return res.sendStatus(404);
-    }
-    return res.json(product);
+
+productsRouter.get('/:pid', (req, res) => {
+  const productId = req.params.pid;
+  const products = JSON.parse(fs.readFileSync('productos.json', 'utf8'));
+  const product = products.find((p) => p.id === productId);
+  if (product) {
+    res.json(product);
+  } else {
+    res.status(404).json({ error: 'Producto no encontrado' });
+  }
 });
 
-productRouter.post('/', (req, res) => {
-    const id = productDatabase.length;
-    const newProduct = req.body;
-    newProduct.id = id;
-    productDatabase.push(newProduct);
-    saveDatabase();
-    res.json(newProduct);
+
+productsRouter.post('/', (req, res) => {
+  const { title, description, code, price, status, stock, category, thumbnails } = req.body;
+
+
+  const products = JSON.parse(fs.readFileSync('productos.json', 'utf8'));
+
+ 
+  const productId = uuidv4();
+
+
+  const newProduct = {
+    id: productId,
+    title,
+    description,
+    code,
+    price,
+    status: status || true,
+    stock,
+    category,
+    thumbnails,
+  };
+
+ 
+  products.push(newProduct);
+
+
+  fs.writeFileSync('productos.json', JSON.stringify(products, null, 2));
+
+  res.json(newProduct);
 });
 
-productRouter.put('/:pid', (req, res) => {
-    const id = req.params.pid;
-    const updatedProduct = req.body;
-    const index = productDatabase.findIndex(p => p.id === id);
-    if (index === -1) {
-        return res.sendStatus(404);
-    }
-    productDatabase[index] = {...productDatabase[index], ...updatedProduct};
-    saveDatabase();
-    res.json(productDatabase[index]);
+
+productsRouter.put('/:pid', (req, res) => {
+  const productId = req.params.pid;
+  const updatedFields = req.body;
+
+  // Leer el archivo productos.json
+  const products = JSON.parse(fs.readFileSync('productos.json', 'utf8'));
+  const productIndex = products.findIndex((p) => p.id === productId);
+
+  if (productIndex !== -1) {
+
+    products[productIndex] = {
+      ...products[productIndex],
+      ...updatedFields,
+      id: productId, 
+    };
+
+
+    fs.writeFileSync('productos.json', JSON.stringify(products, null, 2));
+
+    res.json(products[productIndex]);
+  } else {
+    res.status(404).json({ error: 'Producto no encontrado' });
+  }
 });
 
-productRouter.delete('/:pid', (req, res) => {
-    const id = req.params.pid;
-    const index = productDatabase.findIndex(p => p.id === id);
-    if (index === -1) {
-        return res.sendStatus(404);
-    }
-    const deletedProduct = productDatabase.splice(index, 1);
-    saveDatabase();
-    return res.json(deletedProduct);
-}); 
+
+productsRouter.delete('/:pid', (req, res) => {
+  const productId = req.params.pid;
 
 
-module.exports = productRouter;
+  const products = JSON.parse(fs.readFileSync('productos.json', 'utf8'));
+  const productIndex = products.findIndex((p) => p.id === productId);
+
+  if (productIndex !== -1) {
+   
+    products.splice(productIndex, 1);
+
+   
+    fs.writeFileSync('productos.json', JSON.stringify(products, null, 2));
+
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Producto no encontrado' });
+  }
+});
+
+app.use('/api/products', productsRouter);
