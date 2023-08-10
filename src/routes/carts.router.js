@@ -1,4 +1,11 @@
+const express = require('express');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
+
+
+
+const cartsRouter = express.Router();
 
 cartsRouter.post('/', (req, res) => {
    
@@ -50,7 +57,7 @@ cartsRouter.post('/', (req, res) => {
         cart.products[existingProductIndex].quantity += quantity;
       } else {
         
-        cart.products.push({ product: productId, quantity });
+        cart.products.push({ product: productId, quantity: 1 });
       }
   
 
@@ -63,7 +70,7 @@ cartsRouter.post('/', (req, res) => {
   });
   
 
-  app.use('/api/carts', cartsRouter);
+  module.exports = cartsRouter
   
   
     

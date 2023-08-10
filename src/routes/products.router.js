@@ -1,11 +1,10 @@
 
-
 const express = require('express');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 
-app.use(express.json());
+
 
 
 const productsRouter = express.Router();
@@ -52,9 +51,7 @@ productsRouter.post('/', (req, res) => {
     thumbnails,
   };
 
- 
   products.push(newProduct);
-
 
   fs.writeFileSync('productos.json', JSON.stringify(products, null, 2));
 
@@ -66,7 +63,7 @@ productsRouter.put('/:pid', (req, res) => {
   const productId = req.params.pid;
   const updatedFields = req.body;
 
-  // Leer el archivo productos.json
+
   const products = JSON.parse(fs.readFileSync('productos.json', 'utf8'));
   const productIndex = products.findIndex((p) => p.id === productId);
 
@@ -108,4 +105,4 @@ productsRouter.delete('/:pid', (req, res) => {
   }
 });
 
-app.use('/api/products', productsRouter);
+module.exports = productsRouter
